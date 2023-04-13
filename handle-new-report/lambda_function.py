@@ -26,7 +26,7 @@ def lambda_handler(event, context):
         ]
 
         report_info = {
-            "id": report_id,
+            "reportId": report_id,
             "userId": report["userId"],
             "title": report["title"],
             "location": report["location"],
