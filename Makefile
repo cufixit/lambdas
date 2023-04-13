@@ -1,4 +1,5 @@
 .DEFAULT_GOAL := help
+LAMBDAS := $(subst /,,$(shell ls -d -- */))
 
 .PHONY: help
 help:
@@ -6,27 +7,25 @@ help:
 
 ##@ Build
 .PHONY: build
-build: handle-new-report ## package all Lambda functions
-
-.PHONY: handle-new-report
-handle-new-report: handle-new-report.zip ## package handle-new-report Lambda function
+build: $(addsuffix .zip,$(LAMBDAS)) ## package all Lambda functions
 
 .PHONY: rebuild
 rebuild: clean build ## repackage all Lambda functions
 
-handle-new-report.zip: handle-new-report/lambda_function.py handle-new-report/requirements.txt
-	./package.sh handle-new-report
+.PHONY: build-%
+build-% %.zip: %/lambda_function.py %/requirements.txt
+	./package.sh $*
 
 ##@ Deploy
 .PHONY: deploy
-deploy: deploy-handle-new-report ## deploy all packaged Lambda functions to AWS
-
-.PHONY: deploy-handle-new-report
-deploy-handle-new-report: handle-new-report.zip ## deploy packaged handle-new-report Lambda code to AWS
-	aws lambda update-function-code --no-cli-pager --function-name handle-new-report --zip-file fileb://handle-new-report.zip
+deploy: $(addprefix deploy-,$(LAMBDAS)) ## deploy all packaged Lambda functions to AWS
 
 .PHONY: redeploy
 redeploy: clean deploy ## repackage and deploy all Lambda functions
+
+.PHONY: deploy-%
+deploy-%: %.zip
+	aws lambda update-function-code --no-cli-pager --function-name $* --zip-file fileb://$*.zip
 
 ##@ Cleanup
 .PHONY: clean
