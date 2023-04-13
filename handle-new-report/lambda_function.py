@@ -27,7 +27,7 @@ def lambda_handler(event, context):
 
         report_info = {
             "reportId": report_id,
-            "userId": report["userId"],
+            "userId": event["requestContext"]["authorizer"]["claims"]["sub"],
             "title": report["title"],
             "location": report["location"],
             "description": report["description"],
@@ -43,7 +43,7 @@ def lambda_handler(event, context):
         headers = {
             "Access-Control-Allow-Headers": "Content-Type",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "OPTIONS,POST",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         }
 
         return {
