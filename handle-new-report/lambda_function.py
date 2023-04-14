@@ -17,7 +17,7 @@ def lambda_handler(event, context):
         report = json.loads(event["body"])
 
         report_id = str(uuid1())
-        image_keys = [f"{report_id}/image-{i}" for i in range(int(report["numImages"]))]
+        image_keys = [f"{report_id}/{name}" for name in report["images"]]
         presigned_urls = [
             s3.generate_presigned_url(
                 ClientMethod="put_object", Params={"Bucket": bucket_name, "Key": key}
