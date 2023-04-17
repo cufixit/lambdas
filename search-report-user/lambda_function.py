@@ -19,7 +19,7 @@ def lambda_handler(event, context):
         print(f"Fetching report {report_id} for user {user_id}")
     else:
         print(f"Fetching all reports for user {user_id}")
-    
+
     headers = {
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Origin": "*",

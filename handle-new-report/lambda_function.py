@@ -19,9 +19,7 @@ def lambda_handler(event, context):
         report_id = str(uuid1())
         image_keys = [f"{report_id}/{name}" for name in report["images"]]
         presigned_urls = [
-            s3.generate_presigned_post(
-                Bucket=bucket_name, Key=key, ExpiresIn=3600
-            )
+            s3.generate_presigned_post(Bucket=bucket_name, Key=key, ExpiresIn=3600)
             for key in image_keys
         ]
 

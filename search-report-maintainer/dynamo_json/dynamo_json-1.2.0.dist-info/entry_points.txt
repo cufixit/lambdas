@@ -1,3 +1,0 @@
-[console_scripts]
-dynamo-json = cli:dynamo_json
-
