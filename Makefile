@@ -1,3 +1,5 @@
+include ./makefile.env
+
 .DEFAULT_GOAL := help
 LAMBDAS := $(subst /,,$(shell ls -d -- */))
 
@@ -21,11 +23,22 @@ build-% %.zip: %/lambda_function.py %/requirements.txt
 deploy: $(addprefix deploy-,$(LAMBDAS)) ## deploy all packaged Lambda functions to AWS
 
 .PHONY: redeploy
-redeploy: clean deploy ## repackage and deploy all Lambda functions
+redeploy: clean deploy ## repackage and deploy all Lambda functions to AWS
 
 .PHONY: deploy-%
 deploy-%: %.zip
 	aws lambda update-function-code --no-cli-pager --function-name $* --zip-file fileb://$*.zip
+
+##@ Store
+.PHONY: upload
+upload: $(addprefix store-,$(LAMBDAS)) ## upload all packaged Lambda functions to S3
+
+.PHONY: reupload
+reupload: clean upload ## repackage and upload all Lambda functions to S3
+
+.PHONY: upload-%
+upload-%: %.zip
+	aws s3 cp $*.zip s3://$(LAMBDA_CODE_SOURCE_BUCKET)/$*.zip
 
 ##@ Cleanup
 .PHONY: clean
