@@ -29,9 +29,9 @@ redeploy: clean deploy ## repackage and deploy all Lambda functions to AWS
 deploy-%: %.zip
 	aws lambda update-function-code --no-cli-pager --function-name $* --zip-file fileb://$*.zip
 
-##@ Store
+##@ Upload
 .PHONY: upload
-upload: $(addprefix store-,$(LAMBDAS)) ## upload all packaged Lambda functions to S3
+upload: $(addprefix upload-,$(LAMBDAS)) ## upload all packaged Lambda functions to S3
 
 .PHONY: reupload
 reupload: clean upload ## repackage and upload all Lambda functions to S3
