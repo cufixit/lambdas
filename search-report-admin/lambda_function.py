@@ -83,7 +83,7 @@ def get_all_reports():
             items.extend(response["Items"])
         print(f"Successfully retrieved items: {items}")
         return items
-    
+
     print(f"Failed to retrieve items: {response}")
     return []
 
@@ -99,7 +99,7 @@ def get_report_by_id(reportID):
         ]
         print(f"Successfully retrieved item: {item}")
         return item
-    
+
     print(f"Failed to retrieve item: {response}")
     return None
 
