@@ -1,52 +1,68 @@
+import os
 import json
 import boto3
-from botocore.exceptions import ClientError
 from uuid import uuid1
+from datetime import datetime
+from botocore.exceptions import ClientError
 
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
 
-queue_url = "https://sqs.us-east-1.amazonaws.com/662545362847/NewReportText"
-bucket_name = "cu-fixit-photos"
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+}
+
+
+def generate_presigned_post(bucket, report_id, images, expiration=3600):
+    image_keys = [f"{report_id}/{name}" for name in images]
+    presigned_urls = [
+        s3.generate_presigned_post(Bucket=bucket, Key=key, ExpiresIn=expiration)
+        for key in image_keys
+    ]
+    return image_keys, presigned_urls
 
 
 def lambda_handler(event, context):
     print(f"Received event: {event}")
 
     try:
+        # parse report and user information from event
         report = json.loads(event["body"])
+        user_id = event["requestContext"]["authorizer"]["claims"]["sub"]
 
+        # generate presigned URLs to post images
         report_id = str(uuid1())
-        image_keys = [f"{report_id}/{name}" for name in report["images"]]
-        presigned_urls = [
-            s3.generate_presigned_post(Bucket=bucket_name, Key=key, ExpiresIn=3600)
-            for key in image_keys
-        ]
+        image_keys, presigned_urls = generate_presigned_post(
+            bucket=os.environ["photosBucketName"],
+            report_id=report_id,
+            images=report["images"],
+        )
 
+        # generate SQS message containing report content
         report_info = {
-            "reportId": report_id,
-            "userId": event["requestContext"]["authorizer"]["claims"]["sub"],
+            "reportID": report_id,
+            "userID": user_id,
             "title": report["title"],
             "location": report["location"],
             "description": report["description"],
+            "date": datetime.now().strftime("%m/%d/%Y"),
             "imageKeys": image_keys,
         }
         print(report_info)
 
+        # send report content to SQS queue
         sqs_response = sqs.send_message(
-            QueueUrl=queue_url, MessageBody=json.dumps(report_info)
+            QueueUrl=os.environ["newReportQueueUrl"],
+            MessageBody=json.dumps(report_info),
         )
         print(sqs_response)
 
-        headers = {
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        }
-
         return {
             "statusCode": 200,
-            "headers": headers,
+            "headers": CORS_HEADERS,
             "body": json.dumps({"reportId": report_id, "imageUrls": presigned_urls}),
         }
 
@@ -54,5 +70,6 @@ def lambda_handler(event, context):
         print(error)
         return {
             "statusCode": 500,
+            "headers": CORS_HEADERS,
             "body": json.dumps("An error occurred while processing the report"),
         }
