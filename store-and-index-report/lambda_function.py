@@ -30,6 +30,19 @@ dynamodb = boto3.resource("dynamodb")
 
 def put_report(report_info):
     reports_table = dynamodb.Table(os.environ["reportsTableName"])
+
+    # Retrieve the existing record from DynamoDB using the report ID
+    response = reports_table.get_item(Key={"reportID": report_info["reportID"]})
+    print(f"Fetching report {report_info['reportID']} from table: {response}")
+
+    photo_labels = None
+    if item := response.get("Item"):
+        # If record already exists, fetch the existing labels
+        print(f"Successfully fetched report: {item}")
+        photo_labels = item.get("photo_labels")
+    else:
+        print(f"Report with ID {report_info['reportID']} not found")
+
     table_item = {
         "reportID": report_info["reportID"],
         "userID": report_info["userID"],
@@ -39,7 +52,7 @@ def put_report(report_info):
         "date": report_info["date"],
         "imageKeys": report_info["imageKeys"],
         "status": INITIAL_STATUS,
-        "photo_labels": None,
+        "photo_labels": photo_labels,
         "keywords": None,
     }
     print(f"Putting report in table: {table_item}")

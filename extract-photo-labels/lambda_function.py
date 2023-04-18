@@ -15,25 +15,32 @@ def extract_photo_labels(bucket_name, object_key):
     return [l["Name"] for l in response["Labels"]]
 
 
-def update_report(reportID, labels):
+def create_or_update_report(reportID, labels):
     reports_table = dynamodb.Table(os.environ["reportsTableName"])
 
     # Retrieve the existing record from DynamoDB using the report ID
     response = reports_table.get_item(Key={"reportID": reportID})
-    item = response["Item"]
-    print(f"Successfully retrieved item: {response}")
+    print(f"Fetching report {reportID} from table: {response}")
 
-    if existing_labels := item.get("photo_labels"):
-        updated_labels = existing_labels.extend(labels)
+    if item := response.get("Item"):
+        # If record already exists, append the labels
+        print(f"Successfully fetched report: {item}")
+        if existing_labels := item.get("photo_labels"):
+            labels = existing_labels.extend(labels)
+        return reports_table.update_item(
+            Key={"reportID": reportID},
+            UpdateExpression="SET photo_labels = :labels",
+            ExpressionAttributeValues={":labels": labels},
+        )
     else:
-        updated_labels = labels
-
-    # Update the record in DynamoDB with the new labels
-    return reports_table.update_item(
-        Key={"reportID": reportID},
-        UpdateExpression="SET photo_labels = :labels",
-        ExpressionAttributeValues={":labels": updated_labels},
-    )
+        # If record does not exist, create a new record with the labels
+        print(f"Report with ID {reportID} not found")
+        table_item = {
+            "reportID": reportID,
+            "photo_labels": labels,
+        }
+        print(f"Putting report in table: {table_item}")
+        return reports_table.put_item(Item=table_item)
 
 
 def lambda_handler(event, context):
@@ -51,26 +58,10 @@ def lambda_handler(event, context):
 
     # code adapted from https://serverlessland.com/snippets/integration-s3-to-lambda?utm_source=aws&utm_medium=link&utm_campaign=python&utm_id=docsamples
     try:
-        """
-        response = s3.head_object(Bucket=bucket_name, Key=object_key)
-        custom_labels = []
-        if response["Metadata"]:
-            print("METADATA IS:", response["Metadata"])
-
-            if response["Metadata"]['customlabels']:
-                json_labels = json.loads(response["Metadata"]['customlabels'])
-                to_append = json_labels['labels']
-                print("the custom labels are:", to_append)
-                custom_labels = to_append
-
-
-        print("The custom labels are", custom_labels)
-        """
-
         labels = extract_photo_labels(bucket_name, object_key)
         print(f"Successfully extracted labels: {labels}")
 
-        response = update_report(reportID, labels)
+        response = create_or_update_report(reportID, labels)
         print(f"Successfully updated report: {response}")
 
     except Exception as error:
