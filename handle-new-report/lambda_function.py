@@ -31,20 +31,20 @@ def lambda_handler(event, context):
     try:
         # parse report and user information from event
         report = json.loads(event["body"])
-        user_id = event["requestContext"]["authorizer"]["claims"]["sub"]
+        userID = event["requestContext"]["authorizer"]["claims"]["sub"]
 
         # generate presigned URLs to post images
-        report_id = str(uuid1())
+        reportID = str(uuid1())
         image_keys, presigned_urls = generate_presigned_post(
             bucket=os.environ["photosBucketName"],
-            report_id=report_id,
+            report_id=reportID,
             images=report["images"],
         )
 
         # generate SQS message containing report content
         report_info = {
-            "reportID": report_id,
-            "userID": user_id,
+            "reportID": reportID,
+            "userID": userID,
             "title": report["title"],
             "location": report["location"],
             "description": report["description"],
@@ -63,7 +63,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"reportId": report_id, "imageUrls": presigned_urls}),
+            "body": json.dumps({"reportId": reportID, "imageUrls": presigned_urls}),
         }
 
     except ClientError as error:
