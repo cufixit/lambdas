@@ -11,7 +11,7 @@ from inflection import singularize
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,DELETE,OPTIONS",
 }
 
 credentials = boto3.Session().get_credentials()
@@ -45,32 +45,31 @@ def generate_presigned_url(bucket, object_key, expiration=3600):
     except ClientError as error:
         print(error)
 
+# def query(keywords):
+#     # keywords = clean_keywords(keywords) Don't clean for now because you aren't storing as lowercase in dynamo
+#     print("Cleaned up keywords:", keywords)
 
-def query(keywords):
-    # keywords = clean_keywords(keywords) Don't clean for now because you aren't storing as lowercase in dynamo
-    print("Cleaned up keywords:", keywords)
+#     q = {"size": 100, "query": {"multi_match": {"query": keywords}}}
 
-    q = {"size": 100, "query": {"multi_match": {"query": keywords}}}
+#     response = search.search(index="reports", body=q)
+#     print(f"Received response: {response}")
 
-    response = search.search(index="reports", body=q)
-    print(f"Received response: {response}")
-
-    hits = response["hits"]["hits"]
-    return [hit["_source"]["reportID"] for hit in hits]
+#     hits = response["hits"]["hits"]
+#     return [hit["_source"]["reportID"] for hit in hits]
 
 
-def clean_keywords(keywords):
-    keywords = [
-        part.strip()
-        for keyword in keywords
-        for part in re.sub(r"(?: and | in | the | a )", ",", keyword).split(",")
-    ]
-    keywords = list(filter(bool, keywords))
-    keywords = [re.sub(r"\s+", "", keyword) for keyword in keywords]
-    keywords = [keyword.lower() for keyword in keywords]
-    keywords = [singularize(keyword) for keyword in keywords]
+# def clean_keywords(keywords):
+#     keywords = [
+#         part.strip()
+#         for keyword in keywords
+#         for part in re.sub(r"(?: and | in | the | a )", ",", keyword).split(",")
+#     ]
+#     keywords = list(filter(bool, keywords))
+#     keywords = [re.sub(r"\s+", "", keyword) for keyword in keywords]
+#     keywords = [keyword.lower() for keyword in keywords]
+#     keywords = [singularize(keyword) for keyword in keywords]
 
-    return keywords
+#     return keywords
 
 
 def get_all_reports():
@@ -104,60 +103,83 @@ def get_report_by_id(reportID):
     return None
 
 
-# TODO modify update_report to update based on the given flag
-# For now it only sets the status to "REVIEWED"
-def update_report(reportID, to_update="REVIEWED", flag="status"):
-    table = dynamodb.Table(os.environ["reportsTableName"])
+def delete_report_by_id(reportID):
+    reports_table = dynamodb.Table(os.environ["reportsTableName"])
 
-    # Retrieve the existing record from DynamoDB using the report ID
-    response = table.get_item(Key={"reportID": reportID})
-    item = response["Item"]
-    # print(f"Successfully got item: {response}")
-    # Extract the existing set of labels from the record
-    # Right now this will be an empty set, possible it will be pre-populated later
-    cur_status = item.get("status")
+    response = reports_table.get_item(Key={"reportID": reportID})
+    if item := response.get("Item"):
+        response = s3.delete_objects(
+            Bucket=os.environ["photosBucketName"],
+            Delete={
+                "Objects": [{"Key": key} for key in item.get("imageKeys", [])]
+            }
+        )
+        print(f"Successfully deleted photos from S3: {response}")
 
-    # Update the record in DynamoDB with the new labels
-    update = table.update_item(
-        Key={"reportID": reportID},
-        UpdateExpression="SET #status = :status",
-        ExpressionAttributeNames={"#status": "status"},
-        ExpressionAttributeValues={":status": to_update},
-    )
+    response = reports_table.delete_item(Key={"reportID": reportID})
+    print(f"Successfully deleted report from table: {response}")
 
-    # print(f"The table updated successfully: {update}")
+    response = search.delete(index="reports", id=reportID)
+    print(f"Successfully deleted report from index: {response}")
+
+
+# # TODO modify update_report to update based on the given flag
+# # For now it only sets the status to "REVIEWED"
+# def update_report(reportID, to_update="REVIEWED", flag="status"):
+#     table = dynamodb.Table(os.environ["reportsTableName"])
+
+#     # Retrieve the existing record from DynamoDB using the report ID
+#     response = table.get_item(Key={"reportID": reportID})
+#     item = response["Item"]
+#     # print(f"Successfully got item: {response}")
+#     # Extract the existing set of labels from the record
+#     # Right now this will be an empty set, possible it will be pre-populated later
+#     cur_status = item.get("status")
+
+#     # Update the record in DynamoDB with the new labels
+#     update = table.update_item(
+#         Key={"reportID": reportID},
+#         UpdateExpression="SET #status = :status",
+#         ExpressionAttributeNames={"#status": "status"},
+#         ExpressionAttributeValues={":status": to_update},
+#     )
+
+#     # print(f"The table updated successfully: {update}")
+
+
+def process_request(method, reportID):
+    if method == "GET":
+        if reportID:
+            if report := get_report_by_id(reportID):
+                return report
+        else:
+            if reports := get_all_reports():
+                return reports
+    elif method == "DELETE":
+        if reportID:
+            delete_report_by_id(reportID)
+        else:
+            raise NotImplementedError("Deleting all reports is not supported")
+    else:
+        raise NotImplementedError(f"Method {method} is not supported")
 
 
 def lambda_handler(event, context):
     print(f"Received event: {event}")
-    # user_query = event.get("q")
 
     reportID = None
     if path_params := event["pathParameters"]:
         reportID = path_params.get("reportId")
+    method = event["httpMethod"]
 
     try:
-        results = []
-        if reportID:
-            # user_query = reportID
-            # dynamoIDs = query(
-            #     user_query
-            # )  # this is returning multiple results because of the way I was generating test cases based on timestamp
-            # print(f"The dynamoIDs are: {dynamoIDs}")
-
-            if report := get_report_by_id(reportID):
-                print(f"Successfully retrieved report: {report}")
-                results.append(report)
-        else:
-            print("About to scan dynamo")
-            results.extend(get_all_reports())
-
-        return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps(results)}
+        body = process_request(method, reportID)
+        return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps(body)}
 
     except Exception as error:
         print(error)
         return {
             "statusCode": 500,
             "headers": CORS_HEADERS,
-            "body": json.dumps("Backend error"),
+            "body": json.dumps("Internal server error"),
         }
