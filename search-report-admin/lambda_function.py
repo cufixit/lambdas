@@ -1,11 +1,9 @@
 import os
-import re
 import json
 import boto3
 from opensearchpy import OpenSearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
 from botocore.exceptions import ClientError
-from inflection import singularize
 
 
 CORS_HEADERS = {
@@ -44,6 +42,7 @@ def generate_presigned_url(bucket, object_key, expiration=3600):
         )
     except ClientError as error:
         print(error)
+
 
 # def query(keywords):
 #     # keywords = clean_keywords(keywords) Don't clean for now because you aren't storing as lowercase in dynamo
@@ -110,9 +109,7 @@ def delete_report_by_id(reportID):
     if item := response.get("Item"):
         response = s3.delete_objects(
             Bucket=os.environ["photosBucketName"],
-            Delete={
-                "Objects": [{"Key": key} for key in item.get("imageKeys", [])]
-            }
+            Delete={"Objects": [{"Key": key} for key in item.get("imageKeys", [])]},
         )
         print(f"Successfully deleted photos from S3: {response}")
 

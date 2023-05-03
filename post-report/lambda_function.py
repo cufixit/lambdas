@@ -8,6 +8,8 @@ from botocore.exceptions import ClientError
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
 
+PHOTOS_BUCKET_NAME = os.environ["photosBucketName"]
+PROCESS_REPORT_QUEUE_URL = os.environ["processReportQueueUrl"]
 
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
@@ -36,7 +38,7 @@ def lambda_handler(event, context):
         # generate presigned URLs to post images
         reportID = str(uuid1())
         image_keys, presigned_urls = generate_presigned_post(
-            bucket=os.environ["photosBucketName"],
+            bucket=PHOTOS_BUCKET_NAME,
             report_id=reportID,
             images=report["images"],
         )
@@ -55,7 +57,7 @@ def lambda_handler(event, context):
 
         # send report content to SQS queue
         sqs_response = sqs.send_message(
-            QueueUrl=os.environ["newReportQueueUrl"],
+            QueueUrl=PROCESS_REPORT_QUEUE_URL,
             MessageBody=json.dumps(report_info),
         )
         print(sqs_response)
