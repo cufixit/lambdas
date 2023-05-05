@@ -44,12 +44,14 @@ def update_report_group_ids(group_info):
 
 def lambda_handler(event, context):
     print(f"Received event: {event}")
-    message = event["Records"][0]["body"]
-    group_info = json.loads(message)
 
     try:
-        response = create_group(group_info)
-        print(f"Successfully created group in reports table: {response}")
+        message = json.loads(event["Records"][0]["body"])
+        group_info = message["group"]
+
+        if message["operation"] == "CREATE_REPORT":
+            response = create_group(group_info)
+            print(f"Successfully created group in reports table: {response}")
 
         count = update_report_group_ids(group_info)
         print(

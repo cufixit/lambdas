@@ -20,30 +20,43 @@ def lambda_handler(event, context):
     print(f"Received event: {event}")
 
     try:
-        # parse group information from event
-        group = json.loads(event["body"])
-        groupID = f"GRP-{uuid1()}"
+        body = json.loads(event["body"])
 
-        # generate SQS message containing group content
-        group["reports"] = group.get("reports", [])
-        if not isinstance(group["reports"], list):
-            group["reports"] = [group["reports"]]
+        if event["resource"] == "/groups":
+            groupID = f"GRP-{uuid1()}"
+            message = {
+                "operation": "CREATE_REPORT",
+                "group": {
+                    "groupID": groupID,
+                    "title": body["title"],
+                    "location": body["location"],
+                    "description": body["description"],
+                    "reports": body["reports"],
+                },
+            }
 
-        group_info = {
-            "groupID": groupID,
-            "title": group["title"],
-            "location": group["location"],
-            "description": group["description"],
-            "reports": group["reports"],
-        }
-        print(group_info)
+        elif event["resource"] == "/groups/{groupId}/reports":
+            groupID = event["pathParameters"]["groupId"]
+            if len(body["reports"]) == 0:
+                return {
+                    "statusCode": 400,
+                    "headers": CORS_HEADERS,
+                    "body": json.dumps("No reports were provided"),
+                }
+            message = {
+                "operation": "ADD_REPORTS",
+                "group": {
+                    "groupID": groupID,
+                    "reports": body["reports"],
+                },
+            }
 
-        # send report content to SQS queue
-        sqs_response = sqs.send_message(
+        print(f"Sending message to process-group-queue: {message}")
+        response = sqs.send_message(
             QueueUrl=PROCESS_GROUP_QUEUE_URL,
-            MessageBody=json.dumps(group_info),
+            MessageBody=json.dumps(message),
         )
-        print(sqs_response)
+        print(response)
 
         return {
             "statusCode": 200,
@@ -56,5 +69,5 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "headers": CORS_HEADERS,
-            "body": json.dumps("An error occurred while processing the report"),
+            "body": json.dumps("An error occurred while processing the group"),
         }
