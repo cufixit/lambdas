@@ -26,8 +26,8 @@ def update_report(reportID, keywords):
 
     # Update the record in DynamoDB with the new keywords
     return reports_table.update_item(
-        Key={"reportID": reportID},
-        UpdateExpression="ADD keywords :keywords",
+        Key={"ID": reportID},
+        UpdateExpression="SET keywords = :keywords",
         ExpressionAttributeValues={":keywords": set(keywords)},
     )
 

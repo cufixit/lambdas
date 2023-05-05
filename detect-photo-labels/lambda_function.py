@@ -13,14 +13,15 @@ dynamodb = boto3.resource("dynamodb")
 
 def detect_photo_labels(bucket_name, object_key):
     response = rekognition.detect_labels(
-        Image={"S3Object": {"Bucket": bucket_name, "Name": object_key}}
+        Image={"S3Object": {"Bucket": bucket_name, "Name": object_key}},
+        MaxLabels=5,
     )
 
     def normalize(word):
         word = word.lower().strip()
         return singular if (singular := p.singular_noun(word)) else word
 
-    return [normalize(l["Name"]) for l in response["Labels"]]
+    return [normalize(lw) for l in response["Labels"] for lw in l["Name"].split(" ")]
 
 
 def update_report(reportID, photo_labels):
@@ -28,7 +29,7 @@ def update_report(reportID, photo_labels):
 
     # Update the record in DynamoDB with the new photo labels
     return reports_table.update_item(
-        Key={"reportID": reportID},
+        Key={"ID": reportID},
         UpdateExpression="ADD photoLabels :photoLabels",
         ExpressionAttributeValues={":photoLabels": set(photo_labels)},
     )

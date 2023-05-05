@@ -15,9 +15,13 @@ DETECT_KEYWORDS_QUEUE_URL = os.environ["detectKeywordsQueueUrl"]
 def create_report(report_info):
     reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
     return reports_table.update_item(
-        Key={"reportID": report_info["reportID"]},
-        UpdateExpression="SET userID = :userID, title = :title, location = :location, description = :description, date = :date, imageKeys = :imageKeys, #status = :status",
-        ExpressionAttributeNames={"#status": "status"},
+        Key={"ID": report_info["reportID"]},
+        UpdateExpression="SET userID = :userID, title = :title, #location = :location, description = :description, #date = :date, imageKeys = :imageKeys, #status = :status",
+        ExpressionAttributeNames={
+            "#location": "location",
+            "#date": "date",
+            "#status": "status",
+        },
         ExpressionAttributeValues={
             ":userID": report_info["userID"],
             ":title": report_info["title"],
@@ -57,4 +61,7 @@ def lambda_handler(event, context):
     except Exception as error:
         print(error)
 
-    return {"statusCode": 200, "body": json.dumps("Successfully processed report")}
+    return {
+        "statusCode": 200,
+        "body": json.dumps(f"Successfully processed report {report_info['reportID']}"),
+    }
