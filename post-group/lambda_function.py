@@ -22,7 +22,7 @@ def lambda_handler(event, context):
     try:
         # parse group information from event
         group = json.loads(event["body"])
-        groupID = f"GRP#{uuid1()}"
+        groupID = f"GRP-{uuid1()}"
 
         # generate SQS message containing group content
         group["reports"] = group.get("reports", [])

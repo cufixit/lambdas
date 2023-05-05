@@ -33,8 +33,9 @@ def lambda_handler(event, context):
     for record in event.get("Records", []):
         try:
             id = record["dynamodb"]["Keys"]["ID"]["S"]
+            print(f"Updating index for record {id} ...")
 
-            if id.startswith("GRP#"):
+            if id.startswith("GRP-"):
                 if record["eventName"] == "REMOVE":
                     print(f"Removing {id} from groups index")
                     search.delete(index="groups", id=id)
@@ -50,7 +51,7 @@ def lambda_handler(event, context):
                     print(f"Adding {id} to groups index: {body}")
                     search.index(index="groups", id=id, body=body)
 
-            elif id.startswith("RPT#"):
+            elif id.startswith("RPT-"):
                 if record["eventName"] == "REMOVE":
                     print(f"Removing {id} from reports index")
                     search.delete(index="reports", id=id)

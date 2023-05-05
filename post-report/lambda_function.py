@@ -36,7 +36,7 @@ def lambda_handler(event, context):
         userID = event["requestContext"]["authorizer"]["claims"]["sub"]
 
         # generate presigned URLs to post images
-        reportID = f"RPT#{uuid1()}"
+        reportID = f"RPT-{uuid1()}"
         image_keys, presigned_urls = generate_presigned_post(
             bucket=PHOTOS_BUCKET_NAME,
             report_id=reportID,
