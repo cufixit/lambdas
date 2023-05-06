@@ -11,15 +11,15 @@ dynamodb = boto3.resource("dynamodb")
 REPORTS_TABLE_NAME = os.environ["reportsTableName"]
 DETECT_KEYWORDS_QUEUE_URL = os.environ["detectKeywordsQueueUrl"]
 
-
+# note that I changed date to created_date - Jesse
 def create_report(report_info):
     reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
     return reports_table.update_item(
         Key={"ID": report_info["reportID"]},
-        UpdateExpression="SET userID = :userID, title = :title, #location = :location, description = :description, #date = :date, imageKeys = :imageKeys, #status = :status",
+        UpdateExpression="SET userID = :userID, title = :title, #location = :location, description = :description, #created_date = :created_date, imageKeys = :imageKeys, #status = :status",
         ExpressionAttributeNames={
             "#location": "location",
-            "#date": "date",
+            # "#date": "date",
             "#status": "status",
         },
         ExpressionAttributeValues={
@@ -27,7 +27,7 @@ def create_report(report_info):
             ":title": report_info["title"],
             ":location": report_info["location"],
             ":description": report_info["description"],
-            ":date": report_info["date"],
+            ":created_date": report_info["date"],
             ":imageKeys": report_info["imageKeys"],
             ":status": INITIAL_STATUS,
         },

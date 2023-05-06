@@ -4,6 +4,7 @@ import boto3
 from opensearchpy import OpenSearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import SparsePCA
 
 AWS_REGION = os.environ["AWS_REGION"]
 REPORTS_DOMAIN_HOST = os.environ["reportsDomainHost"]
@@ -96,7 +97,13 @@ def lambda_handler(event, context):
                         record_text += f", {', '.join(new_image['photoLabels']['SS'])}"
                     
                     X = vectorizer.fit_transform([record_text])
-                    print(f"The vector for report {id} is {X}")
+
+                    # Perform Sparse PCA on the generated vector
+                    n_components = 10
+                    sparse_pca = SparsePCA(n_components=n_components)
+                    X_reduced = sparse_pca.fit_transform(X.toarray())
+
+                    print(f"The vector for report {id} is {X_reduced}")
                     print(f"Adding {id} to reports index: {body}")
                     search.index(index="reports", id=id, body=body)
                     #TODO index the vector
