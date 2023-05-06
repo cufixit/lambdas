@@ -1,7 +1,7 @@
 include ./makefile.env
 
 .DEFAULT_GOAL := help
-LAMBDAS := $(subst /,,$(shell ls -d -- */))
+LAMBDAS := $(shell ls functions)
 
 .PHONY: help
 help:
@@ -9,13 +9,13 @@ help:
 
 ##@ Build
 .PHONY: build
-build: $(addsuffix .zip,$(LAMBDAS)) ## package all Lambda functions
+build: $(addprefix build/,$(addsuffix .zip,$(LAMBDAS))) ## package all Lambda functions
 
 .PHONY: rebuild
 rebuild: clean build ## repackage all Lambda functions
 
 .PHONY: build-%
-build-% build/%.zip: %/lambda_function.py %/requirements.txt
+build-% build/%.zip: functions/%/lambda_function.py functions/%/requirements.txt
 	./package.sh $*
 
 ##@ Deploy
@@ -38,7 +38,7 @@ reupload: clean upload ## repackage and upload all Lambda functions to S3
 
 .PHONY: upload-%
 upload-%: build/%.zip
-	aws s3 cp build/$*.zip s3://$(LAMBDA_CODE_SOURCE_BUCKET)/$*.zip
+	aws s3 cp build/$*.zip s3://$(LAMBDA_CODE_SOURCE_BUCKET)/functions/$*.zip
 
 ##@ Cleanup
 .PHONY: clean
@@ -46,3 +46,4 @@ clean: ## remove all temporary files
 	find . -type d -name "__pycache__" | xargs rm -rf {};
 	rm -f *.zip
 	rm -rf ./build
+	rm -rf ./functions/*/package
