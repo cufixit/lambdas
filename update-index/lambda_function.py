@@ -7,8 +7,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import SparsePCA
 
 AWS_REGION = os.environ["AWS_REGION"]
-REPORTS_DOMAIN_HOST = os.environ["reportsDomainHost"]
-REPORTS_DOMAIN_PORT = os.environ.get("reportsDomainPort", 443)
+DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
+DOMAIN_PORT = os.environ.get("DOMAIN_PORT", 443)
 
 credentials = boto3.Session().get_credentials()
 awsauth = AWS4Auth(
@@ -19,21 +19,22 @@ awsauth = AWS4Auth(
     session_token=credentials.token,
 )
 search = OpenSearch(
-    hosts=[{"host": REPORTS_DOMAIN_HOST, "port": REPORTS_DOMAIN_PORT}],
+    hosts=[{"host": DOMAIN_ENDPOINT, "port": DOMAIN_PORT}],
     http_auth=awsauth,
     use_ssl=True,
     verify_certs=True,
     connection_class=RequestsHttpConnection,
 )
 
-s3 = boto3.client('s3')
-bucket_name = 'cu-fixit-ml'
-object_key = 'vocabulary.txt'
+s3 = boto3.client("s3")
+bucket_name = "cu-fixit-ml"
+object_key = "vocabulary.txt"
 
 # Load the vocabulary from the S3 bucket
 response = s3.get_object(Bucket=bucket_name, Key=object_key)
-vocab_file_content = response['Body'].read().decode('utf-8')
-vocabulary = set(vocab_file_content.split('\n'))
+vocab_file_content = response["Body"].read().decode("utf-8")
+vocabulary = set(vocab_file_content.split("\n"))
+
 
 def lambda_handler(event, context):
     print(f"Received event: {event}")
@@ -82,10 +83,12 @@ def lambda_handler(event, context):
                             words = new_image[attr]["SS"]
                             for word in words:
                                 vocabulary.add(word.lower())
-                    
+
                     vectorizer = CountVectorizer(vocabulary=vocabulary)
                     # Use the existing checks to build the sequence to vectorize
-                    record_text = f"{new_image['title']['S']}, {new_image['location']['S']}"
+                    record_text = (
+                        f"{new_image['title']['S']}, {new_image['location']['S']}"
+                    )
 
                     if "groupID" in new_image:
                         body["groupID"] = new_image["groupID"]["S"]
@@ -95,7 +98,7 @@ def lambda_handler(event, context):
                     if "photoLabels" in new_image:
                         body["photoLabels"] = " ".join(new_image["photoLabels"]["SS"])
                         record_text += f", {', '.join(new_image['photoLabels']['SS'])}"
-                    
+
                     X = vectorizer.fit_transform([record_text])
 
                     # Perform Sparse PCA on the generated vector
@@ -106,7 +109,7 @@ def lambda_handler(event, context):
                     print(f"The vector for report {id} is {X_reduced}")
                     print(f"Adding {id} to reports index: {body}")
                     search.index(index="reports", id=id, body=body)
-                    #TODO index the vector
+                    # TODO index the vector
 
             documents_counts += 1
 
@@ -114,7 +117,7 @@ def lambda_handler(event, context):
             print(f"Error processing record: {error}")
 
     sorted_vocabulary = sorted(vocabulary)
-    vocab_file_content = '\n'.join(sorted_vocabulary)
+    vocab_file_content = "\n".join(sorted_vocabulary)
     s3.put_object(Bucket=bucket_name, Key=object_key, Body=vocab_file_content)
 
     return {

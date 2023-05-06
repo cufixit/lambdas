@@ -9,7 +9,6 @@ MASTER_PASSWORD = os.environ["MASTER_PASSWORD"]
 
 CREATE = "Create"
 UPDATE = "Update"
-response_data = {}
 
 search = OpenSearch(
     hosts=[{"host": DOMAIN_ENDPOINT, "port": DOMAIN_PORT}],
@@ -18,6 +17,8 @@ search = OpenSearch(
     verify_certs=True,
     connection_class=RequestsHttpConnection,
 )
+
+response_data = {}
 
 
 def lambda_handler(event, context):

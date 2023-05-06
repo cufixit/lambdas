@@ -5,15 +5,18 @@ from botocore.exceptions import ClientError
 from opensearchpy import OpenSearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
 
+AWS_REGION = os.environ["AWS_REGION"]
+REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
+DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
+DOMAIN_PORT = os.environ.get("DOMAIN_PORT", 443)
+
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,OPTIONS",
 }
 
-AWS_REGION = os.environ["AWS_REGION"]
-REPORTS_DOMAIN_HOST = os.environ["reportsDomainHost"]
-REPORTS_DOMAIN_PORT = os.environ.get("reportsDomainPort", 443)
+dynamodb = boto3.resource("dynamodb")
 
 credentials = boto3.Session().get_credentials()
 awsauth = AWS4Auth(
@@ -24,16 +27,12 @@ awsauth = AWS4Auth(
     session_token=credentials.token,
 )
 search = OpenSearch(
-    hosts=[{"host": REPORTS_DOMAIN_HOST, "port": REPORTS_DOMAIN_PORT}],
+    hosts=[{"host": DOMAIN_ENDPOINT, "port": DOMAIN_PORT}],
     http_auth=awsauth,
     use_ssl=True,
     verify_certs=True,
     connection_class=RequestsHttpConnection,
 )
-
-dynamodb = boto3.resource("dynamodb")
-
-REPORTS_TABLE_NAME = os.environ["reportsTableName"]
 
 
 def lambda_handler(event, context):

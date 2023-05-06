@@ -5,17 +5,17 @@ from uuid import uuid1
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-s3 = boto3.client("s3")
-sqs = boto3.client("sqs")
-
-PHOTOS_BUCKET_NAME = os.environ["photosBucketName"]
-PROCESS_REPORT_QUEUE_URL = os.environ["processReportQueueUrl"]
+PHOTOS_BUCKET_NAME = os.environ["PHOTOS_BUCKET_NAME"]
+PROCESS_REPORT_QUEUE_URL = os.environ["PROCESS_REPORT_QUEUE_URL"]
 
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
+
+s3 = boto3.client("s3")
+sqs = boto3.client("sqs")
 
 
 def generate_presigned_post(bucket, report_id, images, expiration=3600):

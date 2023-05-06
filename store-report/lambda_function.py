@@ -2,14 +2,14 @@ import os
 import json
 import boto3
 
+REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
+DETECT_KEYWORDS_QUEUE_URL = os.environ["DETECT_KEYWORDS_QUEUE_URL"]
 
 INITIAL_STATUS = "CREATED"
 
 sqs = boto3.client("sqs")
 dynamodb = boto3.resource("dynamodb")
 
-REPORTS_TABLE_NAME = os.environ["reportsTableName"]
-DETECT_KEYWORDS_QUEUE_URL = os.environ["detectKeywordsQueueUrl"]
 
 # note that I changed date to created_date - Jesse
 def create_report(report_info):

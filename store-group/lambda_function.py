@@ -2,12 +2,11 @@ import os
 import json
 import boto3
 
+REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 
 INITIAL_STATUS = "CREATED"
 
 dynamodb = boto3.resource("dynamodb")
-
-REPORTS_TABLE_NAME = os.environ["reportsTableName"]
 
 
 def create_group(group_info):

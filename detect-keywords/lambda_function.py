@@ -3,10 +3,12 @@ import json
 import boto3
 import inflect
 
-p = inflect.engine()
+REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 
 comprehend = boto3.client("comprehend")
 dynamodb = boto3.resource("dynamodb")
+
+p = inflect.engine()
 
 
 def detect_keywords(description):
@@ -22,7 +24,7 @@ def detect_keywords(description):
 
 
 def update_report(reportID, keywords):
-    reports_table = dynamodb.Table(os.environ["reportsTableName"])
+    reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
 
     # Update the record in DynamoDB with the new keywords
     return reports_table.update_item(

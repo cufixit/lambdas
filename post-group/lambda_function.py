@@ -5,15 +5,15 @@ from uuid import uuid1
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-sqs = boto3.client("sqs")
-
-PROCESS_GROUP_QUEUE_URL = os.environ["processGroupQueueUrl"]
+PROCESS_GROUP_QUEUE_URL = os.environ["PROCESS_GROUP_QUEUE_URL"]
 
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST,OPTIONS",
 }
+
+sqs = boto3.client("sqs")
 
 
 def lambda_handler(event, context):

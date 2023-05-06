@@ -4,11 +4,13 @@ import boto3
 import urllib.parse
 import inflect
 
-p = inflect.engine()
+REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 
-s3 = boto3.client("s3")
-rekognition = boto3.client("rekognition")
 dynamodb = boto3.resource("dynamodb")
+rekognition = boto3.client("rekognition")
+s3 = boto3.client("s3")
+
+p = inflect.engine()
 
 
 def detect_photo_labels(bucket_name, object_key):
@@ -25,7 +27,7 @@ def detect_photo_labels(bucket_name, object_key):
 
 
 def update_report(reportID, photo_labels):
-    reports_table = dynamodb.Table(os.environ["reportsTableName"])
+    reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
 
     # Update the record in DynamoDB with the new photo labels
     return reports_table.update_item(
