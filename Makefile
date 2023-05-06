@@ -15,7 +15,7 @@ build: $(addsuffix .zip,$(LAMBDAS)) ## package all Lambda functions
 rebuild: clean build ## repackage all Lambda functions
 
 .PHONY: build-%
-build-% %.zip: %/lambda_function.py %/requirements.txt
+build-% build/%.zip: %/lambda_function.py %/requirements.txt
 	./package.sh $*
 
 ##@ Deploy
@@ -26,8 +26,8 @@ deploy: $(addprefix deploy-,$(LAMBDAS)) ## deploy all packaged Lambda functions 
 redeploy: clean deploy ## repackage and deploy all Lambda functions to AWS
 
 .PHONY: deploy-%
-deploy-%: %.zip
-	aws lambda update-function-code --no-cli-pager --function-name $* --zip-file fileb://$*.zip
+deploy-%: build/%.zip
+	aws lambda update-function-code --no-cli-pager --function-name $* --zip-file fileb://build/$*.zip
 
 ##@ Upload
 .PHONY: upload
@@ -37,12 +37,12 @@ upload: $(addprefix upload-,$(LAMBDAS)) ## upload all packaged Lambda functions 
 reupload: clean upload ## repackage and upload all Lambda functions to S3
 
 .PHONY: upload-%
-upload-%: %.zip
-	aws s3 cp $*.zip s3://$(LAMBDA_CODE_SOURCE_BUCKET)/$*.zip
+upload-%: build/%.zip
+	aws s3 cp build/$*.zip s3://$(LAMBDA_CODE_SOURCE_BUCKET)/$*.zip
 
 ##@ Cleanup
 .PHONY: clean
 clean: ## remove all temporary files
 	find . -type d -name "__pycache__" | xargs rm -rf {};
 	rm -f *.zip
-	rm -rf */package
+	rm -rf ./build
