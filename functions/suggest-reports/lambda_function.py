@@ -80,13 +80,19 @@ def lambda_handler(event, context):
         print(f"Successfully retrieved reports from OpenSearch: {response}")
 
         suggested_reports = [
-            hit["_source"] for hit in response["hits"]["hits"] if "_source" in hit
+            format_report(hit["_source"])
+            for hit in response["hits"]["hits"]
+            if "_source" in hit
         ]
 
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps(suggested_reports),
+            "body": json.dumps(
+                {
+                    "reports": suggested_reports,
+                }
+            ),
         }
 
     except ClientError as error:
@@ -96,3 +102,23 @@ def lambda_handler(event, context):
             "headers": CORS_HEADERS,
             "body": json.dumps("An error occurred while suggesting reports"),
         }
+
+
+def format_report(item):
+    if keywords := item.get("keywords"):
+        item["keywords"] = keywords.split(" ")
+    if photo_labels := item.get("photoLabels"):
+        item["photo_labels"] = photo_labels.split(" ")
+    report = {
+        "reportId": item["reportID"],
+        "userId": item["userID"],
+        "groupId": item.get("groupID"),
+        "title": item["title"],
+        "building": item["building"],
+        "description": item["description"],
+        "createdDate": item["created_date"],
+        "status": item["status"],
+        "keywords": item.get("keywords"),
+        "photoLabels": item.get("photo_labels"),
+    }
+    return report
