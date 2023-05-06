@@ -11,23 +11,20 @@ sqs = boto3.client("sqs")
 dynamodb = boto3.resource("dynamodb")
 
 
-# note that I changed date to created_date - Jesse
 def create_report(report_info):
     reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
     return reports_table.update_item(
         Key={"ID": report_info["reportID"]},
-        UpdateExpression="SET userID = :userID, title = :title, #location = :location, description = :description, #created_date = :created_date, imageKeys = :imageKeys, #status = :status",
+        UpdateExpression="SET userID = :userID, title = :title, building = :building, description = :description, created_date = :created_date, imageKeys = :imageKeys, #status = :status",
         ExpressionAttributeNames={
-            "#location": "location",
-            # "#date": "date",
             "#status": "status",
         },
         ExpressionAttributeValues={
             ":userID": report_info["userID"],
             ":title": report_info["title"],
-            ":location": report_info["location"],
+            ":building": report_info["building"],
             ":description": report_info["description"],
-            ":created_date": report_info["date"],
+            ":created_date": report_info["created_date"],
             ":imageKeys": report_info["imageKeys"],
             ":status": INITIAL_STATUS,
         },

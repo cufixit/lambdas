@@ -35,6 +35,8 @@ def lambda_handler(event, context):
                                 "reportID": {"type": "keyword"},
                                 "userID": {"type": "keyword"},
                                 "groupID": {"type": "keyword"},
+                                "building": {"type": "keyword"},
+                                "status": {"type": "keyword"},
                             }
                         }
                     },
@@ -47,6 +49,8 @@ def lambda_handler(event, context):
                         "mappings": {
                             "properties": {
                                 "groupID": {"type": "keyword"},
+                                "building": {"type": "keyword"},
+                                "status": {"type": "keyword"},
                             }
                         }
                     },

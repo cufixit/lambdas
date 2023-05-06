@@ -48,9 +48,9 @@ def lambda_handler(event, context):
             "reportID": reportID,
             "userID": userID,
             "title": report["title"],
-            "location": report["location"],
+            "building": report["building"],
             "description": report["description"],
-            "date": datetime.now().strftime("%m/%d/%Y"),
+            "created_date": datetime.now().strftime("%m/%d/%Y"),
             "imageKeys": image_keys,
         }
         print(report_info)

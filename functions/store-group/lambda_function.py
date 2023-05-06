@@ -16,7 +16,7 @@ def create_group(group_info):
             "ID": group_info["groupID"],
             "groupID": group_info["groupID"],
             "title": group_info["title"],
-            "location": group_info["location"],
+            "building": group_info["building"],
             "description": group_info["description"],
             "status": INITIAL_STATUS,
         }

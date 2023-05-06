@@ -29,7 +29,7 @@ def lambda_handler(event, context):
                 "group": {
                     "groupID": groupID,
                     "title": body["title"],
-                    "location": body["location"],
+                    "building": body["building"],
                     "description": body["description"],
                     "reports": body["reports"],
                 },

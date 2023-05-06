@@ -67,7 +67,7 @@ def lambda_handler(event, context):
                                     "title^4",
                                     "keywords^2",
                                     "photoLabels^2",
-                                    "location",
+                                    "building",
                                     "description",
                                 ],
                             }
