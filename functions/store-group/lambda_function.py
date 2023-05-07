@@ -6,6 +6,9 @@ REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 
 INITIAL_STATUS = "CREATED"
 
+CREATE_GROUP_OPERATION = "CREATE_GROUP"
+ADD_REPORTS_OPERATION = "ADD_REPORTS"
+
 dynamodb = boto3.resource("dynamodb")
 
 
@@ -48,7 +51,7 @@ def lambda_handler(event, context):
         message = json.loads(event["Records"][0]["body"])
         group_info = message["group"]
 
-        if message["operation"] == "CREATE_REPORT":
+        if message["operation"] == CREATE_GROUP_OPERATION:
             response = create_group(group_info)
             print(f"Successfully created group in reports table: {response}")
 

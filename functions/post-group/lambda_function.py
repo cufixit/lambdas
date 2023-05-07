@@ -13,6 +13,9 @@ CORS_HEADERS = {
     "Access-Control-Allow-Methods": "POST,OPTIONS",
 }
 
+CREATE_GROUP_OPERATION = "CREATE_GROUP"
+ADD_REPORTS_OPERATION = "ADD_REPORTS"
+
 sqs = boto3.client("sqs")
 
 
@@ -25,7 +28,7 @@ def lambda_handler(event, context):
         if event["resource"] == "/groups":
             groupID = f"GRP-{uuid1()}"
             message = {
-                "operation": "CREATE_REPORT",
+                "operation": CREATE_GROUP_OPERATION,
                 "group": {
                     "groupID": groupID,
                     "title": body["title"],
@@ -44,7 +47,7 @@ def lambda_handler(event, context):
                     "body": json.dumps("No reports were provided"),
                 }
             message = {
-                "operation": "ADD_REPORTS",
+                "operation": ADD_REPORTS_OPERATION,
                 "group": {
                     "groupID": groupID,
                     "reports": body["reports"],
