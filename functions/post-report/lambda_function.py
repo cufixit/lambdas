@@ -14,6 +14,8 @@ CORS_HEADERS = {
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
 
+CREATE_REPORT_OPERATION = "CREATE_REPORT"
+
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
 
@@ -31,8 +33,7 @@ def lambda_handler(event, context):
     print(f"Received event: {event}")
 
     try:
-        # parse report and user information from event
-        report = json.loads(event["body"])
+        body = json.loads(event["body"])
         userID = event["requestContext"]["authorizer"]["claims"]["sub"]
 
         # generate presigned URLs to post images
@@ -40,27 +41,30 @@ def lambda_handler(event, context):
         image_keys, presigned_urls = generate_presigned_post(
             bucket=PHOTOS_BUCKET_NAME,
             report_id=reportID,
-            images=report["images"],
+            images=body["images"],
         )
 
-        # generate SQS message containing report content
-        report_info = {
-            "reportID": reportID,
-            "userID": userID,
-            "title": report["title"],
-            "building": report["building"],
-            "description": report["description"],
-            "created_date": datetime.now().strftime("%m/%d/%Y"),
-            "imageKeys": image_keys,
+        # generate create report message
+        message = {
+            "operation": CREATE_REPORT_OPERATION,
+            "report": {
+                "reportID": reportID,
+                "userID": userID,
+                "title": body["title"],
+                "building": body["building"],
+                "description": body["description"],
+                "created_date": datetime.now().strftime("%m/%d/%Y"),
+                "imageKeys": image_keys,
+            },
         }
-        print(report_info)
+        print(f"Sending message to process-report-queue: {message}")
 
-        # send report content to SQS queue
-        sqs_response = sqs.send_message(
+        # send create report message to SQS queue
+        response = sqs.send_message(
             QueueUrl=PROCESS_REPORT_QUEUE_URL,
-            MessageBody=json.dumps(report_info),
+            MessageBody=json.dumps(message),
         )
-        print(sqs_response)
+        print(response)
 
         return {
             "statusCode": 200,

@@ -7,6 +7,8 @@ DETECT_KEYWORDS_QUEUE_URL = os.environ["DETECT_KEYWORDS_QUEUE_URL"]
 
 INITIAL_STATUS = "CREATED"
 
+CREATE_REPORT_OPERATION = "CREATE_REPORT"
+
 sqs = boto3.client("sqs")
 dynamodb = boto3.resource("dynamodb")
 
@@ -45,15 +47,17 @@ def send_to_detect_keywords_queue(report_info):
 
 def lambda_handler(event, context):
     print(f"Received event: {event}")
-    message = event["Records"][0]["body"]
-    report_info = json.loads(message)
 
     try:
-        response = create_report(report_info)
-        print(f"Successfully created report in reports table: {response}")
+        message = json.loads(event["Records"][0]["body"])
+        report_info = message["report"]
 
-        response = send_to_detect_keywords_queue(report_info)
-        print(f"Successfully sent report to detect keywords queue: {response}")
+        if message["operation"] == CREATE_REPORT_OPERATION:
+            response = create_report(report_info)
+            print(f"Successfully created report in reports table: {response}")
+
+            response = send_to_detect_keywords_queue(report_info)
+            print(f"Successfully sent report to detect keywords queue: {response}")
 
     except Exception as error:
         print(error)
