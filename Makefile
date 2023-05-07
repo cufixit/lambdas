@@ -34,7 +34,7 @@ build-layer-% build/layers/%.zip: layers/%/*.py layers/%/requirements.txt
 deploy: deploy-functions deploy-layers ## deploy all packaged Lambda functions and layers to AWS
 
 .PHONY: deploy-functions
-deploy-functions: $(addprefix deploy-layer-,$(LAMBDAS)) ## deploy all packaged Lambda functions to AWS
+deploy-functions: $(addprefix deploy-function-,$(LAMBDAS)) ## deploy all packaged Lambda functions to AWS
 
 .PHONY: deploy-layers
 deploy-layers: $(addprefix deploy-layer-,$(LAYERS)) ## deploy all packaged Lambda layers to AWS

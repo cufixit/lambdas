@@ -1,10 +1,8 @@
 import os
 import json
-import boto3
-from opensearchpy import OpenSearch, RequestsHttpConnection
-from requests_aws4auth import AWS4Auth
 from apigateway_helper import cors_headers, AuthContext
 from reports_helper import format_report, DataSource
+from opensearch import opensearch
 
 AWS_REGION = os.environ["AWS_REGION"]
 DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
@@ -22,21 +20,7 @@ def allow_methods(auth_context):
     return "GET,POST,OPTIONS"
 
 
-credentials = boto3.Session().get_credentials()
-awsauth = AWS4Auth(
-    credentials.access_key,
-    credentials.secret_key,
-    AWS_REGION,
-    "es",
-    session_token=credentials.token,
-)
-search = OpenSearch(
-    hosts=[{"host": DOMAIN_ENDPOINT, "port": DOMAIN_PORT}],
-    http_auth=awsauth,
-    use_ssl=True,
-    verify_certs=True,
-    connection_class=RequestsHttpConnection,
-)
+search = opensearch(AWS_REGION, DOMAIN_ENDPOINT, DOMAIN_PORT)
 
 
 def lambda_handler(event, context):

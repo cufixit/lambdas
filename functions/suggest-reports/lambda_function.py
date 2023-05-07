@@ -2,8 +2,7 @@ import os
 import json
 import boto3
 from botocore.exceptions import ClientError
-from opensearchpy import OpenSearch, RequestsHttpConnection
-from requests_aws4auth import AWS4Auth
+from opensearch import opensearch
 
 AWS_REGION = os.environ["AWS_REGION"]
 REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
@@ -17,22 +16,7 @@ CORS_HEADERS = {
 }
 
 dynamodb = boto3.resource("dynamodb")
-
-credentials = boto3.Session().get_credentials()
-awsauth = AWS4Auth(
-    credentials.access_key,
-    credentials.secret_key,
-    AWS_REGION,
-    "es",
-    session_token=credentials.token,
-)
-search = OpenSearch(
-    hosts=[{"host": DOMAIN_ENDPOINT, "port": DOMAIN_PORT}],
-    http_auth=awsauth,
-    use_ssl=True,
-    verify_certs=True,
-    connection_class=RequestsHttpConnection,
-)
+search = opensearch(AWS_REGION, DOMAIN_ENDPOINT, DOMAIN_PORT)
 
 
 def lambda_handler(event, context):
