@@ -40,11 +40,20 @@ def format_report(item, data_source, is_admin):
 def format_group(item, data_source):
     if data_source == DataSource.DYNAMODB:
         item["groupID"] = item.pop("ID")
-    group = {
+    return {
         "groupId": item["groupID"],
         "title": item["title"],
         "building": item["building"],
         "description": item["description"],
         "status": item["status"],
     }
-    return group
+
+
+def format_group_report(item, data_source):
+    if data_source == DataSource.DYNAMODB:
+        item["reportID"] = item.pop("ID")
+    return {
+        "reportId": item["reportID"],
+        "title": item["title"],
+        "createdDate": item["createdDate"],
+    }
