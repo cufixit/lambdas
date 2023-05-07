@@ -47,15 +47,17 @@ def lambda_handler(event, context):
         # generate create report message
         message = {
             "operation": CREATE_REPORT_OPERATION,
-            "report": {
-                "reportID": reportID,
-                "userID": userID,
-                "title": body["title"],
-                "building": body["building"],
-                "description": body["description"],
-                "createdDate": datetime.now().strftime("%m/%d/%Y"),
-                "imageKeys": image_keys,
-            },
+            "reports": [
+                {
+                    "reportID": reportID,
+                    "userID": userID,
+                    "title": body["title"],
+                    "building": body["building"],
+                    "description": body["description"],
+                    "createdDate": datetime.now().strftime("%m/%d/%Y"),
+                    "imageKeys": image_keys,
+                }
+            ],
         }
         print(f"Sending message to process-report-queue: {message}")
 
