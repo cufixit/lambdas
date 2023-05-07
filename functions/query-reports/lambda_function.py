@@ -1,7 +1,7 @@
 import os
 import json
 from apigateway_helper import cors_headers, AuthContext
-from reports_helper import format_report, DataSource
+from formatters import format_report, DataSource
 from opensearch import opensearch
 
 AWS_REGION = os.environ["AWS_REGION"]
@@ -107,6 +107,6 @@ def get_filtered_reports(
     )
     print(f"Successfully queried reports: {response}")
     return [
-        format_report(hit["_source"], auth_context, DataSource.OPENSEARCH)
+        format_report(hit["_source"], DataSource.OPENSEARCH, auth_context.is_admin)
         for hit in response["hits"]["hits"]
     ]

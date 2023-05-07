@@ -3,7 +3,7 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 from apigateway_helper import cors_headers, AuthContext
-from reports_helper import format_report, DataSource
+from formatters import format_report, DataSource
 
 PHOTOS_BUCKET_NAME = os.environ["PHOTOS_BUCKET_NAME"]
 REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
@@ -60,7 +60,7 @@ def get_report_by_id(reportID, auth_context):
 
     if item := response.get("Item"):
         if auth_context.is_admin or auth_context.user_id == item["userID"]:
-            report = format_report(item, auth_context, DataSource.DYNAMODB)
+            report = format_report(item, DataSource.DYNAMODB, auth_context.is_admin)
             print(f"Successfully retrieved report: {report}")
 
             image_urls = [

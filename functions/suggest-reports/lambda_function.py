@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 from botocore.exceptions import ClientError
+from formatters import format_report, DataSource
 from opensearch import opensearch
 
 AWS_REGION = os.environ["AWS_REGION"]
@@ -64,7 +65,7 @@ def lambda_handler(event, context):
         print(f"Successfully retrieved reports from OpenSearch: {response}")
 
         suggested_reports = [
-            format_report(hit["_source"])
+            format_report(hit["_source"], DataSource.OPENSEARCH, True)
             for hit in response["hits"]["hits"]
             if "_source" in hit
         ]
@@ -86,23 +87,3 @@ def lambda_handler(event, context):
             "headers": CORS_HEADERS,
             "body": json.dumps("An error occurred while suggesting reports"),
         }
-
-
-def format_report(item):
-    if keywords := item.get("keywords"):
-        item["keywords"] = keywords.split(" ")
-    if photo_labels := item.get("photoLabels"):
-        item["photo_labels"] = photo_labels.split(" ")
-    report = {
-        "reportId": item["reportID"],
-        "userId": item["userID"],
-        "groupId": item.get("groupID"),
-        "title": item["title"],
-        "building": item["building"],
-        "description": item["description"],
-        "createdDate": item["created_date"],
-        "status": item["status"],
-        "keywords": item.get("keywords"),
-        "photoLabels": item.get("photo_labels"),
-    }
-    return report

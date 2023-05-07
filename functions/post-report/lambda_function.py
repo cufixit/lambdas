@@ -53,7 +53,7 @@ def lambda_handler(event, context):
                 "title": body["title"],
                 "building": body["building"],
                 "description": body["description"],
-                "created_date": datetime.now().strftime("%m/%d/%Y"),
+                "createdDate": datetime.now().strftime("%m/%d/%Y"),
                 "imageKeys": image_keys,
             },
         }

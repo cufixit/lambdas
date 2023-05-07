@@ -60,7 +60,7 @@ def lambda_handler(event, context):
                         "building": new_image["building"]["S"],
                         "description": new_image["description"]["S"],
                         "status": new_image["status"]["S"],
-                        "created_date": new_image["created_date"]["S"],
+                        "createdDate": new_image["createdDate"]["S"],
                     }
                     if "groupID" in new_image:
                         body["groupID"] = new_image["groupID"]["S"]

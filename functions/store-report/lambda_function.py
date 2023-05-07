@@ -17,7 +17,7 @@ def create_report(report_info):
     reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
     return reports_table.update_item(
         Key={"ID": report_info["reportID"]},
-        UpdateExpression="SET userID = :userID, title = :title, building = :building, description = :description, created_date = :created_date, imageKeys = :imageKeys, #status = :status",
+        UpdateExpression="SET userID = :userID, title = :title, building = :building, description = :description, createdDate = :createdDate, imageKeys = :imageKeys, #status = :status",
         ExpressionAttributeNames={
             "#status": "status",
         },
@@ -26,7 +26,7 @@ def create_report(report_info):
             ":title": report_info["title"],
             ":building": report_info["building"],
             ":description": report_info["description"],
-            ":created_date": report_info["created_date"],
+            ":createdDate": report_info["createdDate"],
             ":imageKeys": report_info["imageKeys"],
             ":status": INITIAL_STATUS,
         },
