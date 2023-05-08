@@ -51,7 +51,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "headers": cors_headers(allow_methods(auth_context)),
-                "body": f"Successfully queued report deletion",
+                "body": f"Successfully queued report for deletion",
             }
         else:
             return {
