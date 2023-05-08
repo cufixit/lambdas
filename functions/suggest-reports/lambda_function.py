@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import boto3
 from botocore.exceptions import ClientError
@@ -10,7 +11,7 @@ REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
 DOMAIN_PORT = os.environ.get("DOMAIN_PORT", 443)
 
-DEFAULT_SIZE = 15
+DEFAULT_SIZE = 10
 
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
@@ -20,6 +21,10 @@ CORS_HEADERS = {
 
 dynamodb = boto3.resource("dynamodb")
 search = opensearch(AWS_REGION, DOMAIN_ENDPOINT, DOMAIN_PORT)
+
+
+def normalize(text):
+    return re.sub("[^0-9a-zA-Z]+", " ", text)
 
 
 def lambda_handler(event, context):
@@ -40,6 +45,9 @@ def lambda_handler(event, context):
                 "body": json.dumps(f"Group {groupID} not found"),
             }
 
+        title_query = normalize(item["title"])
+        description_query = normalize(item["description"])
+
         query_fields = [
             "title^4",
             "keywords^2",
@@ -57,18 +65,27 @@ def lambda_handler(event, context):
                             {"term": {"building": item["building"]}},
                             {
                                 "query_string": {
-                                    "query": item["title"],
+                                    "query": title_query,
                                     "fields": query_fields,
                                     "boost": 4,
                                 }
                             },
                             {
                                 "query_string": {
-                                    "query": item["description"],
+                                    "query": description_query,
                                     "fields": query_fields,
                                     "boost": 1,
                                 }
                             },
+                        ],
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "query": title_query,
+                                    "fields": query_fields,
+                                    "boost": 4,
+                                }
+                            }
                         ],
                         "must_not": [{"exists": {"field": "groupID"}}],
                     }
