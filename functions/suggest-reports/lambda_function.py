@@ -10,6 +10,8 @@ REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
 DOMAIN_PORT = os.environ.get("DOMAIN_PORT", 443)
 
+DEFAULT_SIZE = 15
+
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
@@ -48,9 +50,10 @@ def lambda_handler(event, context):
         response = search.search(
             index="reports",
             body={
+                "size": DEFAULT_SIZE,
                 "query": {
                     "bool": {
-                        "should": [
+                        "must": [
                             {"term": {"building": item["building"]}},
                             {
                                 "query_string": {
@@ -69,11 +72,12 @@ def lambda_handler(event, context):
                         ],
                         "must_not": [{"exists": {"field": "groupID"}}],
                     }
-                }
+                },
             },
         )
         print(f"Successfully retrieved reports from OpenSearch: {response}")
 
+        total = response["hits"]["total"]["value"]
         suggested_reports = [
             format_report(hit["_source"], DataSource.OPENSEARCH, True)
             for hit in response["hits"]["hits"]
@@ -85,6 +89,7 @@ def lambda_handler(event, context):
             "headers": CORS_HEADERS,
             "body": json.dumps(
                 {
+                    "total": total,
                     "reports": suggested_reports,
                 }
             ),

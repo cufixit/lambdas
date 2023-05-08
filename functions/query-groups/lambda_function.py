@@ -26,7 +26,7 @@ def lambda_handler(event, context):
         params = p if (p := event.get("queryStringParameters")) else {}
         print(f"Retrieving groups with query params {params} ...")
 
-        groups = get_filtered_groups(
+        results = get_filtered_groups(
             page_from=params.get("from"),
             page_size=params.get("size"),
             query=params.get("q"),
@@ -37,11 +37,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps(
-                {
-                    "groups": groups,
-                }
-            ),
+            "body": json.dumps(results),
         }
 
     except Exception as error:
@@ -91,7 +87,9 @@ def get_filtered_groups(
         },
     )
     print(f"Successfully queried groups: {response}")
-    return [
+    total = response["hits"]["total"]["value"]
+    groups = [
         format_group(hit["_source"], DataSource.OPENSEARCH)
         for hit in response["hits"]["hits"]
     ]
+    return {"total": total, "groups": groups}

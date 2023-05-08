@@ -37,7 +37,7 @@ def lambda_handler(event, context):
             user_id = params.get("userId")
             only_ungrouped = params.get("ungrouped", "false").lower() == "true"
 
-        reports = get_filtered_reports(
+        results = get_filtered_reports(
             auth_context,
             page_from=params.get("from"),
             page_size=params.get("size"),
@@ -51,11 +51,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             "headers": cors_headers(allow_methods(auth_context)),
-            "body": json.dumps(
-                {
-                    "reports": reports,
-                }
-            ),
+            "body": json.dumps(results),
         }
 
     except Exception as error:
@@ -128,7 +124,9 @@ def get_filtered_reports(
         },
     )
     print(f"Successfully queried reports: {response}")
-    return [
+    total = response["hits"]["total"]["value"]
+    reports = [
         format_report(hit["_source"], DataSource.OPENSEARCH, auth_context.is_admin)
         for hit in response["hits"]["hits"]
     ]
+    return {"total": total, "reports": reports}
