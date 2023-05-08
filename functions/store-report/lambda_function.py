@@ -6,10 +6,11 @@ PHOTOS_BUCKET_NAME = os.environ["PHOTOS_BUCKET_NAME"]
 REPORTS_TABLE_NAME = os.environ["REPORTS_TABLE_NAME"]
 DETECT_KEYWORDS_QUEUE_URL = os.environ["DETECT_KEYWORDS_QUEUE_URL"]
 
-INITIAL_STATUS = "CREATED"
+SUBMITTED_STATUS = "SUBMITTED"
 
 CREATE_REPORT_OPERATION = "CREATE_REPORT"
 DELETE_REPORT_OPERATION = "DELETE_REPORT"
+UPDATE_REPORT_OPERATION = "UPDATE_REPORT"
 GROUP_REPORT_OPERATION = "GROUP_REPORT"
 UNGROUP_REPORT_OPERATION = "UNGROUP_REPORT"
 
@@ -33,7 +34,7 @@ def create_report(report):
             ":description": report["description"],
             ":createdDate": report["createdDate"],
             ":imageKeys": report["imageKeys"],
-            ":status": INITIAL_STATUS,
+            ":status": SUBMITTED_STATUS,
         },
     )
     print(f"Successfully created report in reports table: {response}")
@@ -64,6 +65,19 @@ def delete_report(report):
             print(f"Succesfully deleted {len(image_keys)} photos from S3: {response}")
     else:
         print(f"Report {report['reportID']} not found in reports table")
+
+
+def update_report(report):
+    reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
+    report_id = report["reportID"]
+    print(f"Updating group {report_id} in reports table ...")
+    response = reports_table.update_item(
+        Key={"ID": report_id},
+        UpdateExpression="SET #status = :status",
+        ExpressionAttributeNames={"#status": "status"},
+        ExpressionAttributeValues={":status": report["status"]},
+    )
+    print(f"Successfully updated report {report_id} in reports table: {response}")
 
 
 def group_report(report):
@@ -98,6 +112,7 @@ def lambda_handler(event, context):
         process_report = {
             CREATE_REPORT_OPERATION: create_report,
             DELETE_REPORT_OPERATION: delete_report,
+            UPDATE_REPORT_OPERATION: update_report,
             GROUP_REPORT_OPERATION: group_report,
             UNGROUP_REPORT_OPERATION: ungroup_report,
         }[message["operation"]]

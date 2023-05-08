@@ -10,7 +10,7 @@ GROUP_INDEX_NAME = os.environ["GROUP_INDEX_NAME"]
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,DELETE,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,PATCH,DELETE,OPTIONS",
 }
 
 dynamodb = boto3.resource("dynamodb")

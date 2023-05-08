@@ -7,10 +7,13 @@ PROCESS_REPORT_QUEUE_URL = os.environ["PROCESS_REPORT_QUEUE_URL"]
 PROCESS_GROUP_QUEUE_URL = os.environ["PROCESS_GROUP_QUEUE_URL"]
 GROUP_INDEX_NAME = os.environ["GROUP_INDEX_NAME"]
 
-DELETE_GROUP_OPERATION = "DELETE_GROUP"
-DELETE_REPORT_OPERATION = "DELETE_REPORT"
+UPDATE_GROUP_OPERATION = "UPDATE_GROUP"
+UPDATE_REPORT_OPERATION = "UPDATE_REPORT"
 UNGROUP_REPORT_OPERATION = "UNGROUP_REPORT"
 
+SUBMITTED_STATUS = "SUBMITTED"
+PROCESSING_STATUS = "PROCESSING"
+RESOLVED_STATUS = "RESOLVED"
 
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
@@ -28,10 +31,6 @@ def lambda_handler(event, context):
     try:
         group_id = event["pathParameters"]["groupId"]
 
-        cascade = False
-        if params := event.get("queryStringParameters"):
-            cascade = params.get("cascade", "false").lower() == "true"
-
         reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
         items = reports_table.query(
             IndexName=GROUP_INDEX_NAME,
@@ -39,25 +38,44 @@ def lambda_handler(event, context):
             ExpressionAttributeValues={":groupID": group_id},
         ).get("Items", [])
 
-        item_ids = [item["ID"] for item in items]
-        report_ids = filter(lambda id: id.startswith("RPT-"), item_ids)
-        if group_id not in item_ids:
-            send_ungroup_reports_message(report_ids)
+        group, reports = None, []
+        for item in items:
+            if item["ID"].startswith("GRP-"):
+                group = item
+            elif item["ID"].startswith("RPT-"):
+                reports.append(item)
+
+        if not group:
+            send_ungroup_reports_message([report["ID"] for report in reports])
             return {
                 "statusCode": 404,
                 "body": json.dumps(f"Group {group_id} not found"),
             }
 
-        send_delete_group_message(group_id)
-        if cascade:
-            send_delete_reports_message(report_ids)
+        body = json.loads(event["body"])
+        status = body.get("status")
+        if status not in [SUBMITTED_STATUS, PROCESSING_STATUS, RESOLVED_STATUS]:
+            return {
+                "statusCode": 400,
+                "headers": CORS_HEADERS,
+                "body": json.dumps(f"Invalid status: {status}"),
+            }
+
+        if group["status"] != status:
+            send_update_group_message(group_id, status)
         else:
-            send_ungroup_reports_message(report_ids)
+            print(f"Group {group_id} already has status {status}")
+
+        report_ids = [report["ID"] for report in reports if report["status"] != status]
+        if report_ids:
+            send_update_reports_message(report_ids, status)
+        else:
+            print(f"All reports in group {group_id} already have status {status}")
 
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": f"Successfully queued group for deletion",
+            "body": f"Successfully queued group and reports for status update",
         }
 
     except Exception as error:
@@ -69,10 +87,10 @@ def lambda_handler(event, context):
         }
 
 
-def send_delete_group_message(group_id):
+def send_update_group_message(group_id, status):
     message = {
-        "operation": DELETE_GROUP_OPERATION,
-        "group": {"groupID": group_id},
+        "operation": UPDATE_GROUP_OPERATION,
+        "group": {"groupID": group_id, "status": status},
     }
     print(f"Sending message to process-group-queue: {message}")
     response = sqs.send_message(
@@ -82,10 +100,12 @@ def send_delete_group_message(group_id):
     print(response)
 
 
-def send_delete_reports_message(report_ids):
+def send_update_reports_message(report_ids, status):
     message = {
-        "operation": DELETE_REPORT_OPERATION,
-        "reports": [{"reportID": report_id} for report_id in report_ids],
+        "operation": UPDATE_REPORT_OPERATION,
+        "reports": [
+            {"reportID": report_id, "status": status} for report_id in report_ids
+        ],
     }
     print(f"Sending message to process-report-queue: {message}")
     response = sqs.send_message(

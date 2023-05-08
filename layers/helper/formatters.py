@@ -56,4 +56,5 @@ def format_group_report(item, data_source):
         "reportId": item["reportID"],
         "title": item["title"],
         "createdDate": item["createdDate"],
+        "status": item["status"],
     }
