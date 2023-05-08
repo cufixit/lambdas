@@ -32,14 +32,20 @@ def lambda_handler(event, context):
         params = p if (p := event.get("queryStringParameters")) else {}
         print(f"Retrieving reports with query params {params} ...")
 
+        user_id, only_ungrouped = None, False
+        if auth_context.is_admin:
+            user_id = params.get("userId")
+            only_ungrouped = params.get("ungrouped", "false").lower() == "true"
+
         reports = get_filtered_reports(
             auth_context,
             page_from=params.get("from"),
             page_size=params.get("size"),
             query=params.get("q"),
-            user_id=params.get("userId"),
+            user_id=user_id,
             building=params.get("building"),
             status=params.get("status"),
+            only_ungrouped=only_ungrouped,
         )
 
         return {
@@ -69,6 +75,7 @@ def get_filtered_reports(
     user_id=None,
     building=None,
     status=None,
+    only_ungrouped=False,
 ):
     page_from = 0 if page_from is None else max(0, int(page_from))
     page_size = (
@@ -84,6 +91,10 @@ def get_filtered_reports(
         must_clauses.append({"term": {"building": building}})
     if status:
         must_clauses.append({"term": {"status": status}})
+
+    must_not_clauses = []
+    if only_ungrouped:
+        must_not_clauses.append({"exists": {"field": "groupID"}})
 
     should_clauses = []
     if query:
@@ -107,7 +118,13 @@ def get_filtered_reports(
         body={
             "from": page_from if page_from else 0,
             "size": page_size if page_size else DEFAULT_SIZE,
-            "query": {"bool": {"must": must_clauses, "should": should_clauses}},
+            "query": {
+                "bool": {
+                    "must": must_clauses,
+                    "must_not": must_not_clauses,
+                    "should": should_clauses,
+                }
+            },
         },
     )
     print(f"Successfully queried reports: {response}")
