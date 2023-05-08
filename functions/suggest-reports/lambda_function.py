@@ -38,26 +38,36 @@ def lambda_handler(event, context):
                 "body": json.dumps(f"Group {groupID} not found"),
             }
 
-        query_string = item["title"]
-
+        query_fields = [
+            "title^4",
+            "keywords^2",
+            "photoLabels^2",
+            "building",
+            "description",
+        ]
         response = search.search(
             index="reports",
             body={
                 "query": {
                     "bool": {
-                        "should": {
-                            "multi_match": {
-                                "query": query_string,
-                                "fields": [
-                                    "title^4",
-                                    "keywords^2",
-                                    "photoLabels^2",
-                                    "building",
-                                    "description",
-                                ],
-                            }
-                        },
-                        "must_not": {"exists": {"field": "groupID"}},
+                        "should": [
+                            {"term": {"building": item["building"]}},
+                            {
+                                "query_string": {
+                                    "query": item["title"],
+                                    "fields": query_fields,
+                                    "boost": 4,
+                                }
+                            },
+                            {
+                                "query_string": {
+                                    "query": item["description"],
+                                    "fields": query_fields,
+                                    "boost": 1,
+                                }
+                            },
+                        ],
+                        "must_not": [{"exists": {"field": "groupID"}}],
                     }
                 }
             },
