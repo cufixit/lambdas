@@ -86,20 +86,19 @@ def group_report(report):
     group_id = report["groupID"]
     response = reports_table.get_item(Key={"ID": group_id})
     if group := response.get("Item"):
-        response = reports_table.update_item(
-            Key={"ID": report_id},
-            UpdateExpression="SET groupID = :groupID, #status = :status",
-            ExpressionAttributeNames={"#status": "status"},
-            ExpressionAttributeValues={
-                ":groupID": group_id,
-                ":status": group["status"],
-            },
-        )
-        print(
-            f"Successfully assigned report {report_id} to group {group_id}: {response}"
-        )
+        status = group["status"]
     else:
-        print(f"Group {group_id} not found in reports table")
+        status = SUBMITTED_STATUS
+    response = reports_table.update_item(
+        Key={"ID": report_id},
+        UpdateExpression="SET groupID = :groupID, #status = :status",
+        ExpressionAttributeNames={"#status": "status"},
+        ExpressionAttributeValues={
+            ":groupID": group_id,
+            ":status": status,
+        },
+    )
+    print(f"Successfully assigned report {report_id} to group {group_id}: {response}")
 
 
 def ungroup_report(report):
