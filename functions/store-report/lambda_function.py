@@ -84,12 +84,22 @@ def group_report(report):
     reports_table = dynamodb.Table(REPORTS_TABLE_NAME)
     report_id = report["reportID"]
     group_id = report["groupID"]
-    response = reports_table.update_item(
-        Key={"ID": report_id},
-        UpdateExpression="SET groupID = :groupID",
-        ExpressionAttributeValues={":groupID": group_id},
-    )
-    print(f"Successfully assigned report {report_id} to group {group_id}: {response}")
+    response = reports_table.get_item(Key={"ID": group_id})
+    if group := response.get("Item"):
+        response = reports_table.update_item(
+            Key={"ID": report_id},
+            UpdateExpression="SET groupID = :groupID, #status = :status",
+            ExpressionAttributeNames={"#status": "status"},
+            ExpressionAttributeValues={
+                ":groupID": group_id,
+                ":status": group["status"],
+            },
+        )
+        print(
+            f"Successfully assigned report {report_id} to group {group_id}: {response}"
+        )
+    else:
+        print(f"Group {group_id} not found in reports table")
 
 
 def ungroup_report(report):
