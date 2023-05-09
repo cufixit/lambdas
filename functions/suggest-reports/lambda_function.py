@@ -13,6 +13,8 @@ DOMAIN_PORT = os.environ.get("DOMAIN_PORT", 443)
 
 DEFAULT_SIZE = 10
 
+RESOLVED_STATUS = "RESOLVED"
+
 CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Origin": "*",
@@ -87,7 +89,10 @@ def lambda_handler(event, context):
                                 }
                             }
                         ],
-                        "must_not": [{"exists": {"field": "groupID"}}],
+                        "must_not": [
+                            {"exists": {"field": "groupID"}},
+                            {"term": {"status": RESOLVED_STATUS}},
+                        ],
                     }
                 },
             },
