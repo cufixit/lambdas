@@ -58,6 +58,7 @@ def create_reports_index():
                         "groupID": {"type": "keyword"},
                         "building": {"type": "keyword"},
                         "status": {"type": "keyword"},
+                        "createdDate": {"type": "date"},
                     }
                 }
             },
