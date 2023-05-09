@@ -62,10 +62,8 @@ def get_filtered_groups(
         must_clauses.append({"term": {"building": building}})
     if status:
         must_clauses.append({"term": {"status": status}})
-
-    should_clauses = []
     if query:
-        should_clauses.append(
+        must_clauses.append(
             {
                 "query_string": {
                     "query": query,
@@ -83,7 +81,7 @@ def get_filtered_groups(
         body={
             "from": page_from if page_from else 0,
             "size": page_size if page_size else 20,
-            "query": {"bool": {"must": must_clauses, "should": should_clauses}},
+            "query": {"bool": {"must": must_clauses}},
         },
     )
     print(f"Successfully queried groups: {response}")

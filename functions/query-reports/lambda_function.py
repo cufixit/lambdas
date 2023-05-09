@@ -87,14 +87,8 @@ def get_filtered_reports(
         must_clauses.append({"term": {"building": building}})
     if status:
         must_clauses.append({"term": {"status": status}})
-
-    must_not_clauses = []
-    if only_ungrouped:
-        must_not_clauses.append({"exists": {"field": "groupID"}})
-
-    should_clauses = []
     if query:
-        should_clauses.append(
+        must_clauses.append(
             {
                 "query_string": {
                     "query": query,
@@ -109,6 +103,10 @@ def get_filtered_reports(
             }
         )
 
+    must_not_clauses = []
+    if only_ungrouped:
+        must_not_clauses.append({"exists": {"field": "groupID"}})
+
     response = search.search(
         index="reports",
         body={
@@ -118,7 +116,6 @@ def get_filtered_reports(
                 "bool": {
                     "must": must_clauses,
                     "must_not": must_not_clauses,
-                    "should": should_clauses,
                 }
             },
         },
